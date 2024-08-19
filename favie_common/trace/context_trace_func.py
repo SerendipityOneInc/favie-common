@@ -43,7 +43,7 @@ logger.addHandler(handler)
 # file_handler.setFormatter(formatter)
 # logger.addHandler(file_handler)
 
-provider = TracerProvider(resource=Resource.create({"service.name": "shoppal-gateway"}), sampler=ALWAYS_ON)
+provider = TracerProvider(resource=Resource.create({"service.name": "favie-gateway"}), sampler=ALWAYS_ON)
 
 cloud_trace_exporter = CloudTraceSpanExporter()
 batch_processor = BatchSpanProcessor(cloud_trace_exporter, max_export_batch_size=10)

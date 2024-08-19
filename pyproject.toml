@@ -2,7 +2,7 @@
 name = "favie-common"
 version = "0.1.3"
 description = ""
-authors = ["hezhe <hezhe@shoppal.ai>"]
+authors = ["zayne <zayne@srp.one>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
