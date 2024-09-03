@@ -95,7 +95,11 @@ async def async_to_json_obj(arg, k=None, args=None):
 
 def to_json_obj(arg):
     if isinstance(arg, BaseModel):
-        return json.loads(arg.model_dump_json())
+        try:
+            result = json.loads(arg.model_dump_json())
+        except Exception as e:
+            result = ""
+        return result
     elif isinstance(arg, dict) or isinstance(arg, list) or isinstance(arg, str) or isinstance(arg, tuple):
         return arg
 
