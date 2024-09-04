@@ -2,6 +2,7 @@ import json
 import logging
 from functools import wraps
 from inspect import isasyncgenfunction, iscoroutinefunction, isgeneratorfunction
+import time
 from typing import Any, AsyncIterator, Callable, Optional
 
 from asyncstdlib import tee
@@ -12,7 +13,11 @@ from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
 from opentelemetry.propagate import extract
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import ReadableSpan, TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter, SimpleSpanProcessor
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+    SimpleSpanProcessor,
+)
 from opentelemetry.sdk.trace.sampling import ALWAYS_ON
 from opentelemetry.trace.propagation import _SPAN_KEY, set_span_in_context
 from opentelemetry.trace.span import Span
@@ -43,7 +48,9 @@ logger.addHandler(handler)
 # file_handler.setFormatter(formatter)
 # logger.addHandler(file_handler)
 
-provider = TracerProvider(resource=Resource.create({"service.name": "favie-gateway"}), sampler=ALWAYS_ON)
+provider = TracerProvider(
+    resource=Resource.create({"service.name": "favie-gateway"}), sampler=ALWAYS_ON
+)
 
 cloud_trace_exporter = CloudTraceSpanExporter()
 batch_processor = BatchSpanProcessor(cloud_trace_exporter, max_export_batch_size=10)
@@ -56,6 +63,7 @@ provider.add_span_processor(batch_processor)
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
 
+
 def log_info(msg, *args, json_msg=None, **kwargs):
     """Log Info"""
     span = trace.get_current_span()
@@ -63,7 +71,7 @@ def log_info(msg, *args, json_msg=None, **kwargs):
         "otelTraceID": format(span.get_span_context().trace_id, "032x"),
         "otelSpanID": format(span.get_span_context().span_id, "016x"),
         "otelTraceSampled": span.get_span_context().trace_flags.sampled,
-        "json_fields": {"extra": json_msg or {}}
+        "json_fields": {"extra": json_msg or {}},
     }
 
     if "extra" in kwargs:
@@ -76,7 +84,6 @@ def log_info(msg, *args, json_msg=None, **kwargs):
         *args,
         **kwargs,
     )
-
 
 
 async def async_to_json_obj(arg, k=None, args=None):
@@ -100,11 +107,18 @@ def to_json_obj(arg):
         except Exception as e:
             result = ""
         return result
-    elif isinstance(arg, dict) or isinstance(arg, list) or isinstance(arg, str) or isinstance(arg, tuple):
+    elif (
+        isinstance(arg, dict)
+        or isinstance(arg, list)
+        or isinstance(arg, str)
+        or isinstance(arg, tuple)
+    ):
         return arg
 
 
-async def async_set_stacktrace_input_meta(stack_trace, span: Span, args, kwargs, trace_input=False):
+async def async_set_stacktrace_input_meta(
+    stack_trace, span: Span, args, kwargs, trace_input=False
+):
     if trace_input:
         inputs = {}
         for idx, arg in enumerate(args):
@@ -145,16 +159,15 @@ def set_stacktrace_output(
     trace_output=False,
     is_output_error: Optional[Callable[[Any], bool]] = None,
 ):
+    set_stacktrace_t = time.time()
     if is_output_error and is_output_error(result):
         span.set_attribute("output_error", int(is_output_error(result)))
     if trace_output:
         stack_trace["output"] = to_json_obj(result)
 
     if "input" in stack_trace or "output" in stack_trace:
-        log_info(
-            "trace_log",
-            json_msg=stack_trace
-        )
+        log_info("trace_log", json_msg=stack_trace)
+    logger.info("set_stacktrace_output cost:%s", time.time() - set_stacktrace_t)
 
 
 def context_trace(
@@ -172,7 +185,9 @@ def context_trace(
         if inputs:
             set_stacktrace_input_meta(stack_trace, span, [], inputs, True)
 
-        set_stacktrace_output(stack_trace, span, output, True if output else False, is_output_error)
+        set_stacktrace_output(
+            stack_trace, span, output, True if output else False, is_output_error
+        )
 
 
 def get_context(args, kwargs):
@@ -199,7 +214,9 @@ def get_new_context():
     if find_span(span, get_current()):
         context = set_span_in_context(span)
     else:
-        context = set_span_in_context(span, context=set_value(create_key("current-span"), span))
+        context = set_span_in_context(
+            span, context=set_value(create_key("current-span"), span)
+        )
 
     return context
 
@@ -259,7 +276,9 @@ def context_trace_function(
 
                 result = func(*args, **kwargs)
 
-                set_stacktrace_output(stack_trace, span, result, trace_output, is_output_error)
+                set_stacktrace_output(
+                    stack_trace, span, result, trace_output, is_output_error
+                )
 
                 return result
 
@@ -273,11 +292,15 @@ def context_trace_function(
                 context=context,
                 end_on_exit=auto_end,
             ) as span:
-                await async_set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+                await async_set_stacktrace_input_meta(
+                    stack_trace, span, args, kwargs, trace_input
+                )
 
                 result = await func(*args, **kwargs)
 
-                set_stacktrace_output(stack_trace, span, result, trace_output, is_output_error)
+                set_stacktrace_output(
+                    stack_trace, span, result, trace_output, is_output_error
+                )
 
                 return result
 
@@ -297,7 +320,9 @@ def context_trace_function(
                 for value in func(*args, **kwargs):
                     result = value
                     yield value
-                set_stacktrace_output(stack_trace, span, result, trace_output, is_output_error)
+                set_stacktrace_output(
+                    stack_trace, span, result, trace_output, is_output_error
+                )
 
         @wraps(func)
         async def async_generator_wrapper(*args, **kwargs):
@@ -309,13 +334,17 @@ def context_trace_function(
                 context=context,
                 end_on_exit=auto_end,
             ) as span:
-                await async_set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+                await async_set_stacktrace_input_meta(
+                    stack_trace, span, args, kwargs, trace_input
+                )
 
                 result = None
                 async for value in func(*args, **kwargs):
                     result = value
                     yield value
-                set_stacktrace_output(stack_trace, span, result, trace_output, is_output_error)
+                set_stacktrace_output(
+                    stack_trace, span, result, trace_output, is_output_error
+                )
 
         if iscoroutinefunction(func):
             return async_wrapper
@@ -335,7 +364,11 @@ def clean_empty(d):
         return d
     if isinstance(d, list):
         return [v for v in (clean_empty(v) for v in d) if v != [] and v is not None]
-    return {k: v for k, v in ((k, clean_empty(v)) for k, v in d.items()) if v is not None and v != {}}
+    return {
+        k: v
+        for k, v in ((k, clean_empty(v)) for k, v in d.items())
+        if v is not None and v != {}
+    }
 
 
 def custom_serializer(obj):
