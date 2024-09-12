@@ -18,11 +18,7 @@ class CommonUtils():
     @staticmethod
     def all_none(*args):
         return all([arg is None for arg in args])    
-    
-    @staticmethod
-    def any_not_none(*args):
-        return any([arg is not None for arg in args])
-    
+        
     @staticmethod
     def host_trip_www(host:str):
         return re.sub(r'^www\.', '', host) if host is not None else None

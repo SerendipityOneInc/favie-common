@@ -17,6 +17,7 @@ from google.cloud.bigtable.row_filters import (
     FamilyNameRegexFilter,
     RowKeyRegexFilter
 )
+from favie_common.bigtable.bigtable_utils import BigtableUtils
 from favie_common.common.common_utils import CommonUtils
 from favie_common.common.pydantic_utils import PydanticUtils
 
@@ -174,7 +175,7 @@ class BigtableRepository:
                 continue
             column_family = self.cf_config.get(field_name,self.default_cf) if self.cf_config is not None else self.default_cf
             if save_cfs is None or  column_family in save_cfs:
-                column_value = self.__pydantic_field_convert_str(field_value).encode('utf-8')
+                column_value = BigtableUtils.pydantic_field_convert_str(field_value).encode('utf-8')
                 if timestamp is not None:
                     row.set_cell(column_family, field_name, column_value,timestamp=timestamp)
                 else:
@@ -201,47 +202,10 @@ class BigtableRepository:
                     field_type = PydanticUtils.get_field_type(self.model_class, field_name)
                     #if field_type is None,ignore this field,otherwise convert it to pydantic field
                     if field_type is not None:
-                        model_dict[field_name] = self.__str_convert_pydantic_field(field_value, field_type)
+                        model_dict[field_name] = BigtableUtils.str_convert_pydantic_field(field_value, field_type)
         return self.model_class(**model_dict)
     
-    def __pydantic_field_convert_str(self,param,force_dump_json :bool = False) -> str:
-        if isinstance(param, (int, float, str, bool)):  # 原生对象
-            return json.dumps(param) if force_dump_json else str(param)
-        elif isinstance(param, BaseModel):  # Pydantic 对象
-            return param.model_dump_json(exclude_none=True)
-        elif isinstance(param, list):  # 列表
-            json_strings = [self.__pydantic_field_convert_str(item,True) for item in param]  # 递归处理列表中的每个
-            return '[' + ', '.join(json_strings) + ']'  # 组合成一个合法的 JSON 字符串元素
-        else:
-            raise TypeError(f"Unsupported type : {type(param)}")
 
-    def __str_convert_pydantic_field(self,string_data: str, data_type: type):        
-        # 处理原生类型
-        if data_type == int:
-            return int(string_data)
-        elif data_type == float:
-            return float(string_data)
-        elif data_type == str:
-            return string_data
-        elif data_type == bool:
-            return string_data.lower() == "true"
-            
-        # 处理列表类型 必须先处理列表类型，因为列表类型是泛型
-        if PydanticUtils.is_type_of_list(data_type):
-            item_type = get_args(data_type)[0]
-            items = json.loads(string_data)
-            return [self.__str_convert_pydantic_field(item, item_type) for item in items]
-        
-        # 处理 Pydantic 对象
-        if issubclass(data_type, BaseModel):
-            if isinstance(string_data, str):
-                return data_type.model_validate_json(string_data)
-            elif isinstance(string_data, dict):
-                return data_type(**string_data)
-        
-        raise TypeError(f"Unsupported type: {data_type}")    
-
-    
     #generate filters for querying bigtable based on parameters
     def __gen_filters(self,*,version:Optional[str],fields:Optional[list[str]],other_filters:list = None):
         filters = [*other_filters] if other_filters else []

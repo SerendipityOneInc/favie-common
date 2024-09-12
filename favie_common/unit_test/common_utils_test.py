@@ -16,10 +16,6 @@ class TestCommonUtils(unittest.TestCase):
         self.assertTrue(CommonUtils.all_none(None, None, None))
         self.assertFalse(CommonUtils.all_none(None, 1, None))
 
-    def test_any_not_none(self):
-        self.assertTrue(CommonUtils.any_not_none(None, 1, None))
-        self.assertFalse(CommonUtils.any_not_none(None, None, None))
-
     def test_host_trip_www(self):
         self.assertEqual(CommonUtils.host_trip_www("www.example.com"), "example.com")
         self.assertEqual(CommonUtils.host_trip_www("example.com"), "example.com")
