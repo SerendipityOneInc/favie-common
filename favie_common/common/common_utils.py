@@ -8,6 +8,10 @@ import tldextract
 
 class CommonUtils():
     @staticmethod
+    def all_none(*args):
+        return all([arg is None for arg in args])    
+
+    @staticmethod
     def all_not_none(*args):
         return all([arg is not None for arg in args])
     
@@ -16,8 +20,8 @@ class CommonUtils():
         return any([arg is None for arg in args])
     
     @staticmethod
-    def all_none(*args):
-        return all([arg is None for arg in args])    
+    def any_not_none(*args):
+        return any([arg is not None for arg in args])
         
     @staticmethod
     def host_trip_www(host:str):

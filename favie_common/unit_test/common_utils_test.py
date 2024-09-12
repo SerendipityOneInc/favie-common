@@ -11,6 +11,10 @@ class TestCommonUtils(unittest.TestCase):
     def test_any_none(self):
         self.assertTrue(CommonUtils.any_none(1, None, "a"))
         self.assertFalse(CommonUtils.any_none(1, "a", []))
+        
+    def test_any_not_none(self):
+        self.assertTrue(CommonUtils.any_not_none(1, None, "a"))
+        self.assertFalse(CommonUtils.any_not_none(None, None, None))
 
     def test_all_none(self):
         self.assertTrue(CommonUtils.all_none(None, None, None))
