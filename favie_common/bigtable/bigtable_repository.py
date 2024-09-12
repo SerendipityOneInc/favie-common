@@ -271,9 +271,9 @@ class BigtableIndexRepository:
                  bigtable_project_id,
                  bigtable_instance_id,
                  bigtable_index_table_id,
-                 index_class: Type[BigtableIndex],    
-                 index_cf:str,
-                 gen_index: Callable[[BaseModel], BigtableIndex]
+                 index_class: Type[BigtableIndex] = None,    
+                 index_cf:str = None,
+                 gen_index: Callable[[BaseModel], BigtableIndex] = None
             ):
         self.gen_index = gen_index
         self.index_table = BigtableRepository(
