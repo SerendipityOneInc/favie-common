@@ -2,10 +2,16 @@ import json
 from typing import get_args
 from pydantic import BaseModel
 
+from favie_common.common.common_utils import CommonUtils
 from favie_common.common.pydantic_utils import PydanticUtils
 
 
 class BigtableUtils:
+    @staticmethod
+    def gen_hash_rowkey(key:str):
+        md5 = CommonUtils.md5_hash(key)
+        return f'{md5[0:6]}-{key}'  
+    
     @staticmethod    
     def pydantic_field_convert_str(param,force_dump_json :bool = False) -> str:
         if isinstance(param, (int, float, str, bool)):  # 原生对象
