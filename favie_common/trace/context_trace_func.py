@@ -258,30 +258,36 @@ def context_trace_function(
     auto_end=True,
 ):
     def decorator(func):
-        operation_name = trace_name if trace_name else func.__name__
+        try:
+            operation_name = trace_name if trace_name else func.__name__
 
-        stack_trace = {"operation_name": operation_name}
+            stack_trace = {"operation_name": operation_name}
 
-        @wraps(func)
-        def sync_wrapper(*args, **kwargs):
-            args = list(args)
-            context = input_context if input_context else get_context(args, kwargs)
-            attach(context)
-            with tracer.start_as_current_span(
-                operation_name,
-                context=context,
-                end_on_exit=auto_end,
-            ) as span:
-                set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+            @wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                args = list(args)
+                context = input_context if input_context else get_context(args, kwargs)
+                attach(context)
+                with tracer.start_as_current_span(
+                    operation_name,
+                    context=context,
+                    end_on_exit=auto_end,
+                ) as span:
+                    set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
 
-                result = func(*args, **kwargs)
+                    result = func(*args, **kwargs)
 
+<<<<<<< Updated upstream
                 set_stacktrace_output(
                     stack_trace, span, result, trace_output, is_output_error
                 )
+=======
+                    set_stacktrace_output(stack_trace, span, result, trace_output, is_output_error)
+>>>>>>> Stashed changes
 
-                return result
+                    return result
 
+<<<<<<< Updated upstream
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
             args = list(args)
@@ -295,27 +301,45 @@ def context_trace_function(
                 await async_set_stacktrace_input_meta(
                     stack_trace, span, args, kwargs, trace_input
                 )
+=======
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                args = list(args)
+                context = input_context if input_context else get_context(args, kwargs)
+                attach(context)
+                with tracer.start_as_current_span(
+                    operation_name,
+                    context=context,
+                    end_on_exit=auto_end,
+                ) as span:
+                    await async_set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+>>>>>>> Stashed changes
 
-                result = await func(*args, **kwargs)
+                    result = await func(*args, **kwargs)
 
+<<<<<<< Updated upstream
                 set_stacktrace_output(
                     stack_trace, span, result, trace_output, is_output_error
                 )
+=======
+                    set_stacktrace_output(stack_trace, span, result, trace_output, is_output_error)
+>>>>>>> Stashed changes
 
-                return result
+                    return result
 
-        @wraps(func)
-        def generator_wrapper(*args, **kwargs):
-            args = list(args)
-            context = input_context if input_context else get_context(args, kwargs)
-            attach(context)
-            with tracer.start_as_current_span(
-                operation_name,
-                context=context,
-                end_on_exit=auto_end,
-            ) as span:
-                set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+            @wraps(func)
+            def generator_wrapper(*args, **kwargs):
+                args = list(args)
+                context = input_context if input_context else get_context(args, kwargs)
+                attach(context)
+                with tracer.start_as_current_span(
+                    operation_name,
+                    context=context,
+                    end_on_exit=auto_end,
+                ) as span:
+                    set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
 
+<<<<<<< Updated upstream
                 result = None
                 for value in func(*args, **kwargs):
                     result = value
@@ -345,15 +369,42 @@ def context_trace_function(
                 set_stacktrace_output(
                     stack_trace, span, result, trace_output, is_output_error
                 )
+=======
+                    result = None
+                    for value in func(*args, **kwargs):
+                        result = value
+                        yield value
+                    set_stacktrace_output(stack_trace, span, result, trace_output, is_output_error)
 
-        if iscoroutinefunction(func):
-            return async_wrapper
-        elif isgeneratorfunction(func):
-            return generator_wrapper
-        elif isasyncgenfunction(func):
-            return async_generator_wrapper
-        else:
-            return sync_wrapper
+            @wraps(func)
+            async def async_generator_wrapper(*args, **kwargs):
+                args = list(args)
+                context = input_context if input_context else get_context(args, kwargs)
+                attach(context)
+                with tracer.start_as_current_span(
+                    operation_name,
+                    context=context,
+                    end_on_exit=auto_end,
+                ) as span:
+                    await async_set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+
+                    result = None
+                    async for value in func(*args, **kwargs):
+                        result = value
+                        yield value
+                    set_stacktrace_output(stack_trace, span, result, trace_output, is_output_error)
+>>>>>>> Stashed changes
+
+            if iscoroutinefunction(func):
+                return async_wrapper
+            elif isgeneratorfunction(func):
+                return generator_wrapper
+            elif isasyncgenfunction(func):
+                return async_generator_wrapper
+            else:
+                return sync_wrapper
+        except Exception as e:
+            logger.warning("context_trace_function %s, error:%s", trace_name, e)
 
     return decorator
 
