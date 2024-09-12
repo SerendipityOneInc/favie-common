@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "favie-common"
-version = "0.1.4"
+version = "0.1.5.alpha.0"
 description = ""
 authors = ["zayne <zayne@srp.one>"]
 readme = "README.md"
@@ -12,6 +12,8 @@ opentelemetry-api = "1.25.0"
 opentelemetry-exporter-gcp-trace = "1.6.0"
 opentelemetry-sdk = "1.25.0"
 python-json-logger = "2.0.7"
+google-cloud-bigtable = "2.26.0"
+tldextract = "5.1.2"
 
 [build-system]
 requires = ["poetry-core"]
