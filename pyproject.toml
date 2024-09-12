@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "favie-common"
-version = "0.1.5-alpha.1"
+version = "0.1.5-alpha.2"
 description = ""
 authors = ["zayne <zayne@srp.one>"]
 readme = "README.md"
