@@ -280,7 +280,7 @@ class BigtableIndexRepository:
             bigtable_project_id=bigtable_project_id,
             bigtable_instance_id=bigtable_instance_id,
             bigtable_table_id=bigtable_index_table_id,
-            model_class=index_class,
+            model_class=index_class if index_class else BigtableIndex,
             default_cf=index_cf,
             gen_rowkey=self.__gen_rowkey
         )
