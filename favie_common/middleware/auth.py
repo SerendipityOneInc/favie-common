@@ -46,3 +46,18 @@ class AuthDependency:
 
         # 将用户信息放入请求头
         request.state.user_info = user_info
+
+async def auth_dependency_no_raise_error(request: Request):
+    authorization: str = request.headers.get("authorization")
+    if not authorization:
+        request.state.user_info = {"authorization_fail": "Authorization header missing"}
+        return request
+
+    user_info = await get_user_info(authorization)
+
+    if not user_info:
+        request.state.user_info = {"authorization_fail": "Invalid token or user not found"}
+        return request
+
+    request.state.user_info = user_info
+    return request
