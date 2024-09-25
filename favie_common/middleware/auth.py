@@ -1,5 +1,6 @@
 import httpx
 from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 
@@ -17,12 +18,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         authorization: str = request.headers.get("authorization")
         if not authorization:
-            raise HTTPException(status_code=401, detail="Authorization header missing")
+            return JSONResponse(status_code=401, content={"message": "Authorization header missing"})
 
         user_info = await get_user_info(authorization)
 
         if not user_info:
-            raise HTTPException(status_code=401, detail="Invalid token or user not found")
+            return JSONResponse(status_code=401, content={"message": "Invalid token or user not found"})
 
         # 将用户信息放入请求头
         request.state.user_info = user_info
