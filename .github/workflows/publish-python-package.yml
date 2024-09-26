@@ -28,12 +28,26 @@ jobs:
         poetry version $VERSION
     - name: Configure Poetry
       run: |
+        echo "Configuring Poetry for ${{ github.repository }}"
         poetry config repositories.github https://pypi.pkg.github.com/${{ github.repository }}
         poetry config http-basic.github __token__ ${{ secrets.GITHUB_TOKEN }}
     - name: Build and publish
       run: |
         poetry build
-        poetry publish -r github
+        echo "Publishing to GitHub Packages..."
+        poetry publish -r github -vvv
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Debug information
+      if: failure()
+      run: |
+        echo "GitHub Repository: ${{ github.repository }}"
+        echo "Current working directory:"
+        pwd
+        echo "Directory contents:"
+        ls -la
+        echo "Poetry configuration:"
+        poetry config --list
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
