@@ -13,7 +13,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
     - uses: actions/checkout@v2
@@ -29,20 +29,9 @@ jobs:
       run: |
         VERSION=${GITHUB_REF#refs/tags/v}
         poetry version $VERSION
-    # - name: Configure Poetry
-    #   run: |
-    #     echo "Configuring Poetry for ${{ github.repository }}"
-    #     poetry config repositories.github https://api.github.com/repos/${{ github.repository }}
-    #     poetry config http-basic.github ${{ secrets.GH_RELEASE_TOKEN }} ${{ secrets.GH_RELEASE_TOKEN }}
-    - name: Build and publish
-      run: |
-        poetry build
-        # echo "Publishing to GitHub Packages..."
-        # poetry publish -r github -vvv
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+    - name: Build package
+      run: poetry build
     - name: Debug Information
-      if: always()
       run: |
         echo "GitHub Repository: ${{ github.repository }}"
         echo "Poetry version:"
@@ -67,7 +56,9 @@ jobs:
       id: get_filename
       run: |
         WHL_FILE=$(ls ./dist/*.whl | head -n 1)
+        WHL_FILENAME=$(basename $WHL_FILE)
         echo "WHL_FILE=${WHL_FILE}" >> $GITHUB_OUTPUT
+        echo "WHL_FILENAME=${WHL_FILENAME}" >> $GITHUB_OUTPUT
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       env:
@@ -75,6 +66,5 @@ jobs:
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ${{ steps.get_filename.outputs.WHL_FILE }}
-        asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}.whl
+        asset_name: ${{ steps.get_filename.outputs.WHL_FILENAME }}
         asset_content_type: application/octet-stream
-  
