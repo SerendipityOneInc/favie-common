@@ -29,16 +29,16 @@ jobs:
       run: |
         VERSION=${GITHUB_REF#refs/tags/v}
         poetry version $VERSION
-    - name: Configure Poetry
-      run: |
-        echo "Configuring Poetry for ${{ github.repository }}"
-        poetry config repositories.github https://api.github.com/repos/${{ github.repository }}
-        poetry config http-basic.github ${{ secrets.GITHUB_TOKEN }} ${{ secrets.GITHUB_TOKEN }}
+    # - name: Configure Poetry
+    #   run: |
+    #     echo "Configuring Poetry for ${{ github.repository }}"
+    #     poetry config repositories.github https://api.github.com/repos/${{ github.repository }}
+    #     poetry config http-basic.github ${{ secrets.GITHUB_TOKEN }} ${{ secrets.GITHUB_TOKEN }}
     - name: Build and publish
       run: |
         poetry build
-        echo "Publishing to GitHub Packages..."
-        poetry publish -r github -vvv
+        # echo "Publishing to GitHub Packages..."
+        # poetry publish -r github -vvv
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Debug Information
@@ -53,5 +53,23 @@ jobs:
         ls -la
         echo "Dist directory contents:"
         ls -la dist/
-        echo "Attempting to access GitHub API:"
-        curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+    
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/*.whl
+        asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}.whl
+        asset_content_type: application/octet-stream
