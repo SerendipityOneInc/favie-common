@@ -24,14 +24,14 @@ jobs:
         pip install poetry
     - name: Set version
       run: |
-        # 移除 'v' 前缀并设置版本
         VERSION=${GITHUB_REF#refs/tags/v}
         poetry version $VERSION
-    - name: Build and publish
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Configure Poetry
       run: |
-        poetry config pypi-token.github $GITHUB_TOKEN
+        poetry config repositories.github https://pypi.pkg.github.com/${{ github.repository }}
+        poetry config http-basic.github __token__ ${{ secrets.GITHUB_TOKEN }}
+    - name: Build and publish
+      run: |
         poetry build
         poetry publish -r github
     - name: Create Release
