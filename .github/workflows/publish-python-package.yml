@@ -33,14 +33,14 @@ jobs:
     #   run: |
     #     echo "Configuring Poetry for ${{ github.repository }}"
     #     poetry config repositories.github https://api.github.com/repos/${{ github.repository }}
-    #     poetry config http-basic.github ${{ secrets.GITHUB_TOKEN }} ${{ secrets.GITHUB_TOKEN }}
+    #     poetry config http-basic.github ${{ secrets.GH_RELEASE_TOKEN }} ${{ secrets.GH_RELEASE_TOKEN }}
     - name: Build and publish
       run: |
         poetry build
         # echo "Publishing to GitHub Packages..."
         # poetry publish -r github -vvv
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
     - name: Debug Information
       if: always()
       run: |
@@ -57,7 +57,7 @@ jobs:
       id: create_release
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
       with:
         tag_name: ${{ github.ref_name }}
         release_name: Release ${{ github.ref_name }}
@@ -67,7 +67,7 @@ jobs:
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./dist/*.whl
