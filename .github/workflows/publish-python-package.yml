@@ -8,10 +8,14 @@ on:
       - "v*.*.*-alpha.*"
       - "v*.*.*-beta"
       - "v*.*.*-beta.*"
+      - "v*.*.*-release"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python
@@ -29,42 +33,23 @@ jobs:
     - name: Configure Poetry
       run: |
         echo "Configuring Poetry for ${{ github.repository }}"
-        poetry config repositories.github https://github.com/${{ github.repository }}
+        poetry config repositories.github https://api.github.com/repos/${{ github.repository }}/packages/pypi
         poetry config http-basic.github ${{ github.actor }} ${{ secrets.GITHUB_TOKEN }}
-
     - name: Build and publish
       run: |
         poetry build
         echo "Publishing to GitHub Packages..."
         poetry publish -r github -vvv
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Debug information
-      if: failure()
+    - name: Debug Information
+      if: always()
       run: |
+        echo "GitHub Actor: ${{ github.actor }}"
         echo "GitHub Repository: ${{ github.repository }}"
-        echo "Current working directory:"
-        pwd
-        echo "Directory contents:"
-        ls -la
+        echo "Poetry version:"
+        poetry --version
         echo "Poetry configuration:"
         poetry config --list
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/*.whl
-        asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}.whl
-        asset_content_type: application/octet-stream
+        echo "Current directory contents:"
+        ls -la
+        echo "Dist directory contents:"
+        ls -la dist/
