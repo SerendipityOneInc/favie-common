@@ -29,8 +29,9 @@ jobs:
     - name: Configure Poetry
       run: |
         echo "Configuring Poetry for ${{ github.repository }}"
-        poetry config repositories.github https://pypi.pkg.github.com/${{ github.repository }}/simple/
-        poetry config http-basic.github __token__ ${{ secrets.GITHUB_TOKEN }}
+        poetry config repositories.github https://github.com/${{ github.repository }}
+        poetry config http-basic.github ${{ github.actor }} ${{ secrets.GITHUB_TOKEN }}
+
     - name: Build and publish
       run: |
         poetry build
