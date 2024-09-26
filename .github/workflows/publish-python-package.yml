@@ -63,13 +63,18 @@ jobs:
         release_name: Release ${{ github.ref_name }}
         draft: false
         prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
-    
+    - name: Get whl filename
+      id: get_filename
+      run: |
+        WHL_FILE=$(ls ./dist/*.whl | head -n 1)
+        echo "WHL_FILE=${WHL_FILE}" >> $GITHUB_OUTPUT
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/*.whl
+        asset_path: ${{ steps.get_filename.outputs.WHL_FILE }}
         asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}.whl
         asset_content_type: application/octet-stream
+  
