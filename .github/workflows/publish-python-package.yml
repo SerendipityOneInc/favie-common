@@ -8,7 +8,6 @@ on:
       - "v*.*.*-alpha.*"
       - "v*.*.*-beta"
       - "v*.*.*-beta.*"
-      - "v*.*.*-release"
 
 jobs:
   deploy:
@@ -33,17 +32,18 @@ jobs:
     - name: Configure Poetry
       run: |
         echo "Configuring Poetry for ${{ github.repository }}"
-        poetry config repositories.github https://api.github.com/repos/${{ github.repository }}/packages/pypi
-        poetry config http-basic.github ${{ github.actor }} ${{ secrets.GITHUB_TOKEN }}
+        poetry config repositories.github https://api.github.com/repos/${{ github.repository }}
+        poetry config http-basic.github ${{ secrets.GITHUB_TOKEN }} ${{ secrets.GITHUB_TOKEN }}
     - name: Build and publish
       run: |
         poetry build
         echo "Publishing to GitHub Packages..."
         poetry publish -r github -vvv
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Debug Information
       if: always()
       run: |
-        echo "GitHub Actor: ${{ github.actor }}"
         echo "GitHub Repository: ${{ github.repository }}"
         echo "Poetry version:"
         poetry --version
@@ -53,3 +53,5 @@ jobs:
         ls -la
         echo "Dist directory contents:"
         ls -la dist/
+        echo "Attempting to access GitHub API:"
+        curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}
