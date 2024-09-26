@@ -1,4 +1,4 @@
-name: Publish Python Package
+name: Build and Release Python Whl
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - "v*.*.*-beta.*"
 
 jobs:
-  deploy:
+  build-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
