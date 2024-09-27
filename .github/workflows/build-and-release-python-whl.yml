@@ -1,13 +1,20 @@
 name: Build and Release Python Whl
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
-      - "v*.*.*-alpha"
-      - "v*.*.*-alpha.*"
-      - "v*.*.*-beta"
-      - "v*.*.*-beta.*"
+  # push:
+  #   tags:
+  #     - "v*.*.*"
+  #     - "v*.*.*-alpha"
+  #     - "v*.*.*-alpha.*"
+  #     - "v*.*.*-beta"
+  #     - "v*.*.*-beta.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: true
+        default: 'v0.0.0'
+
 
 jobs:
   build-and-release:
