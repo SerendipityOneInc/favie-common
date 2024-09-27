@@ -107,12 +107,7 @@ def to_json_obj(arg):
         except Exception as e:
             result = ""
         return result
-    elif (
-        isinstance(arg, dict)
-        or isinstance(arg, list)
-        or isinstance(arg, str)
-        or isinstance(arg, tuple)
-    ):
+    elif isinstance(arg, (bool, int, float, str, list, tuple, set, dict)):
         return arg
 
 
