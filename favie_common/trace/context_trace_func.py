@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from functools import wraps
+import inspect
 from inspect import isasyncgenfunction, iscoroutinefunction, isgeneratorfunction
 from typing import Any, AsyncIterator, Callable, Optional
 
@@ -106,12 +107,16 @@ def to_json_obj(arg):
         return arg
 
 
-async def async_set_stacktrace_input_meta(stack_trace, span: Span, args, kwargs, trace_input=False):
+async def async_set_stacktrace_input_meta(stack_trace, span: Span, args, kwargs, func, trace_input=False):
     if trace_input:
         inputs = {}
-        for idx, arg in enumerate(args):
-            inputs[str(idx)] = await async_to_json_obj(arg, idx, args)
-        for k, arg in kwargs.items():
+
+        signature = inspect.signature(func)
+        bound_arguments = signature.bind(*args, **kwargs)
+        bound_arguments.apply_defaults()
+        arguments = bound_arguments.arguments
+
+        for k, arg in arguments.items():
             if k == "config":
                 if arg.get("metadata"):
                     for meta_k, meta_v in arg.get("metadata").items():
@@ -120,23 +125,54 @@ async def async_set_stacktrace_input_meta(stack_trace, span: Span, args, kwargs,
             if k == "context":
                 continue
             inputs[k] = await async_to_json_obj(arg)
+
+        # for idx, arg in enumerate(args):
+        #     inputs[str(idx)] = await async_to_json_obj(arg, idx, args)
+        # for k, arg in kwargs.items():
+        #     if k == "config":
+        #         if arg.get("metadata"):
+        #             for meta_k, meta_v in arg.get("metadata").items():
+        #                 span.set_attribute(meta_k, to_json_string(meta_v))
+        #         continue
+        #     if k == "context":
+        #         continue
+        #     inputs[k] = await async_to_json_obj(arg)
         stack_trace["input"] = inputs
 
 
-def set_stacktrace_input_meta(stack_trace, span: Span, args, kwargs, trace_input=False):
+def set_stacktrace_input_meta(stack_trace, span: Span, args, kwargs, func, trace_input=False):
     if trace_input:
         inputs = {}
-        for idx, arg in enumerate(args):
-            inputs[str(idx)] = to_json_obj(arg)
-        for k, arg in kwargs.items():
-            if k == "config":
-                if arg.get("metadata"):
-                    for meta_k, meta_v in arg.get("metadata").items():
-                        span.set_attribute(meta_k, to_json_string(meta_v))
-                continue
-            if k == "context":
-                continue
-            inputs[k] = to_json_obj(arg)
+
+        if func:
+
+            signature = inspect.signature(func)
+            bound_arguments = signature.bind(*args, **kwargs)
+            bound_arguments.apply_defaults()
+            arguments = bound_arguments.arguments
+
+            for k, arg in arguments.items():
+                if k == "config":
+                    if arg.get("metadata"):
+                        for meta_k, meta_v in arg.get("metadata").items():
+                            span.set_attribute(meta_k, to_json_string(meta_v))
+                    continue
+                if k == "context":
+                    continue
+                inputs[k] = to_json_obj(arg)
+        else:
+            
+            for idx, arg in enumerate(args):
+                inputs[str(idx)] = to_json_obj(arg)
+            for k, arg in kwargs.items():
+                if k == "config":
+                    if arg.get("metadata"):
+                        for meta_k, meta_v in arg.get("metadata").items():
+                            span.set_attribute(meta_k, to_json_string(meta_v))
+                    continue
+                if k == "context":
+                    continue
+                inputs[k] = to_json_obj(arg)
         stack_trace["input"] = inputs
 
 
@@ -171,7 +207,7 @@ def context_trace(
     ) as span:
         stack_trace = {}
         if inputs:
-            set_stacktrace_input_meta(stack_trace, span, [], inputs, True)
+            set_stacktrace_input_meta(stack_trace, span, [], inputs, None, True)
 
         set_stacktrace_output(stack_trace, span, output, True if output else False, is_output_error)
 
@@ -256,7 +292,7 @@ def context_trace_function(
                 context=context,
                 end_on_exit=auto_end,
             ) as span:
-                set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+                set_stacktrace_input_meta(stack_trace, span, args, kwargs, func, trace_input)
 
                 result = func(*args, **kwargs)
 
@@ -274,7 +310,7 @@ def context_trace_function(
                 context=context,
                 end_on_exit=auto_end,
             ) as span:
-                await async_set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+                await async_set_stacktrace_input_meta(stack_trace, span, args, kwargs, func, trace_input)
 
                 result = await func(*args, **kwargs)
 
@@ -292,7 +328,7 @@ def context_trace_function(
                 context=context,
                 end_on_exit=auto_end,
             ) as span:
-                set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+                set_stacktrace_input_meta(stack_trace, span, args, kwargs, func, trace_input)
 
                 result = None
                 for value in func(*args, **kwargs):
@@ -310,7 +346,7 @@ def context_trace_function(
                 context=context,
                 end_on_exit=auto_end,
             ) as span:
-                await async_set_stacktrace_input_meta(stack_trace, span, args, kwargs, trace_input)
+                await async_set_stacktrace_input_meta(stack_trace, span, args, kwargs, func, trace_input)
 
                 result = None
                 async for value in func(*args, **kwargs):
