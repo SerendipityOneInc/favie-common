@@ -174,6 +174,7 @@ def set_stacktrace_input_meta(stack_trace, span: Span, args, kwargs, func, trace
                     continue
                 inputs[k] = to_json_obj(arg)
         stack_trace["input"] = inputs
+        log_info("trace_log", json_msg=stack_trace)
 
 
 def set_stacktrace_output(
@@ -188,9 +189,10 @@ def set_stacktrace_output(
         span.set_attribute("output_error", int(is_output_error(result)))
     if trace_output:
         stack_trace["output"] = to_json_obj(result)
-
-    if "input" in stack_trace or "output" in stack_trace:
+        if "input" in stack_trace:
+            del stack_trace["input"]
         log_info("trace_log", json_msg=stack_trace)
+
     logger.info("set_stacktrace_output cost:%s", time.time() - set_stacktrace_t)
 
 
