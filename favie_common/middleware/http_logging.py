@@ -41,22 +41,18 @@ class HttpLoggingMiddleware(BaseHTTPMiddleware):
         http_elapsed_time_ms = round(http_elapsed_time_ms, 2)
 
         http_request = {
-            "requestMethod": request.method,
-            "requestUrl": request.url.path,
-            "requestSize": sys.getsizeof(request),
-            "remoteIp": request.client.host,
+            "request_method": request.method,
+            "request_url": request.url.path,
+            "request_size": sys.getsizeof(request),
+            "remote_ip": request.client.host,
             "protocol": request.url.scheme,
             "params": dict(request.query_params),
         }
 
-        if "referrer" in request.headers:
-            http_request["referrer"] = request.headers.get("referrer")
-
-        if "user-agent" in request.headers:
-            http_request["userAgent"] = request.headers.get("user-agent")
-
-        if "Content-Type" in request.headers:
-            http_request["contentType"] = request.headers.get("Content-Type")
+        headers_to_log = ["referrer", "user-agent", "Content-Type", "Copilot-Version"]
+        for header in headers_to_log:
+            if header in request.headers:
+                http_request[header] = request.headers.get(header)
 
         http_response = {
             "status": status_code,
