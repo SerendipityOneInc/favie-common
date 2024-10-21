@@ -138,6 +138,7 @@ async def async_set_stacktrace_input_meta(stack_trace, span: Span, args, kwargs,
         #         continue
         #     inputs[k] = await async_to_json_obj(arg)
         stack_trace["input"] = inputs
+        log_info("trace_log", json_msg=stack_trace)
 
 
 def set_stacktrace_input_meta(stack_trace, span: Span, args, kwargs, func, trace_input=False):
