@@ -4,6 +4,7 @@ import os
 from typing import Dict, List
 
 from prometheus_client import Counter, Histogram
+from prometheus_fastapi_instrumentator import Instrumentator, metrics
 
 logger = logging.getLogger(__name__)
 DEFAULT_LATENCY_BUCKETS = [
@@ -48,6 +49,43 @@ class PrometheusMetrics:
             ["workflow_name", "step", "error_type", "func_name"] + self.common_labels_keys,
         )
 
+    def init_instrumentator(self) -> Instrumentator:
+        """初始化并配置 Instrumentator"""
+        instrumentator = Instrumentator()
+
+        # 注册 HTTP 请求指标
+        instrumentator.add(
+            metrics.requests(
+                metric_name="http_requests_total",
+                should_include_handler=True,
+                should_include_method=True,
+                should_include_status=True,
+            )
+        )
+        
+        # 注册延迟指标
+        instrumentator.add(
+            metrics.latency(
+                metric_name="http_request_duration_seconds",
+                should_include_handler=True,
+                should_include_method=True,
+                should_include_status=True,
+                buckets=self.latency_buckets,
+            )
+        )
+        
+        # 注册请求大小指标
+        instrumentator.add(
+            metrics.request_size(
+                metric_name="http_request_size_bytes",
+                should_include_handler=True,
+                should_include_method=True,
+                should_include_status=True,
+            )
+        )
+
+        return instrumentator
+    
     def get_common_labels(self) -> Dict[str, str]:
         return {
             "app_name": self.app_name,
