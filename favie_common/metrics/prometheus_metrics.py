@@ -84,13 +84,13 @@ class PrometheusMetrics:
         return instrumentator
 
 
-    def safe_inc_error_count(self, workflow_name: str, step: str, error_type: str, func_name: str):
+    def safe_inc_error_count(self, workflow_name: str, step: str, error_type: str, func_name: str, n: int = 1):
         """Increment error count"""
         try:
             common_labels = get_common_labels()
             self.workflow_error_count.labels(
                 workflow_name=workflow_name, step=step, error_type=error_type, func_name=func_name, **common_labels
-            ).inc()
+            ).inc(n)
         except Exception as e:
             logger.error(
                 "Failed to increment error count: %s, labels: %s",
@@ -103,6 +103,15 @@ class PrometheusMetrics:
                     **get_common_labels(),
                 },
             )
+    def safe_inc_downstream_request_count(self, workflow_name: str, step: str, status: str, func_name: str, n: int = 1):
+        """Increment downstream request count"""
+        try:
+            common_labels = get_common_labels()
+            self.downstream_request_count.labels(
+                workflow_name=workflow_name, step=step, status=status, func_name=func_name, **common_labels
+            ).inc(n)
+        except Exception as e:
+            logger.error("Failed to increment downstream request count: %s, labels: %s", e, locals())
 
 
     def track_function_metrics(self, workflow_name: str, step: str):
