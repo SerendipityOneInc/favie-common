@@ -30,7 +30,11 @@ class R2Client:
         self.bucket_name = bucket_name
         self.region_name = region_name
         self.config = config
-        self.client = self._initialize_client()
+
+    @property
+    def client(self):
+        """Get a new client instance each time."""
+        return self._initialize_client()
 
     def _initialize_client(self):
         """Initialize R2 client."""
