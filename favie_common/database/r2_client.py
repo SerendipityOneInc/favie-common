@@ -44,23 +44,28 @@ class R2Client:
             region_name=self.region_name,
         )
 
-    async def upload_file(self, key: str, filename: str, extra_args: Optional[Dict[Any, Any]] = None):
+    def _select_bucket(self, bucket_name: str = ""):
+        """Select the bucket to use."""
+        if bucket_name:
+            return bucket_name
+        return self.bucket_name
+
+    async def upload_file(self, key: str, filename: str, extra_args: Optional[Dict[Any, Any]] = None, bucket_name: str = ""):
         """Upload file to R2."""
         async with self.client as client:
-            await client.upload_file(Filename=filename, Bucket=self.bucket_name, Key=key, ExtraArgs=extra_args or {})
+            await client.upload_file(Filename=filename, Bucket=self._select_bucket(bucket_name), Key=key, ExtraArgs=extra_args or {})
 
-    async def upload_fileobj(self, fileobj, key: str, extra_args: Optional[Dict[Any, Any]] = None):
+    async def upload_fileobj(self, fileobj, key: str, extra_args: Optional[Dict[Any, Any]] = None, bucket_name: str = ""):
         """Upload file to R2."""
         async with self.client as client:
-            await client.upload_fileobj(Fileobj=fileobj, Bucket=self.bucket_name, Key=key, ExtraArgs=extra_args or {})
+            await client.upload_fileobj(Fileobj=fileobj, Bucket=self._select_bucket(bucket_name), Key=key, ExtraArgs=extra_args or {})
 
-    async def download_file(self, key: str, filename: str):
+    async def download_file(self, key: str, filename: str, bucket_name: str = ""):
         """Download file from R2."""
         async with self.client as client:
-            await client.download_file(Bucket=self.bucket_name, Key=key, Filename=filename)
+            await client.download_file(Bucket=self._select_bucket(bucket_name), Key=key, Filename=filename)
 
-    async def upload_object(self, fileobj, key: str, bucket_name: str = "",
-                        metadata: Optional[Dict[Any, Any]] = None):
+    async def upload_object(self, fileobj, key: str, bucket_name: str = "", metadata: Optional[Dict[Any, Any]] = None):
         """Upload file to R2.
         
         Args:
@@ -72,7 +77,7 @@ class R2Client:
         """
         async with self.client as client:
             return await client.put_object(
-                Bucket=bucket_name or self.bucket_name, 
+                Bucket=self._select_bucket(bucket_name), 
                 Key=key,
                 Body=fileobj,
                 Metadata=metadata or {}
@@ -89,37 +94,37 @@ class R2Client:
         """
         async with self.client as client:
             try:
-                response = await client.get_object(Bucket=bucket_name or self.bucket_name, Key=key)
+                response = await client.get_object(Bucket=self._select_bucket(bucket_name), Key=key)
                 return await response["Body"].read()
             except Exception as e: # pylint: disable=broad-exception-caught
                 logger.error("Error downloading file: %s, key: %s", str(e), key)
                 return None
     
-    async def check_object_exists(self, key: str) -> bool:
+    async def check_object_exists(self, key: str, bucket_name: str = "") -> bool:
         """Check if an object exists in R2."""
         async with self.client as client:
             try:
-                response = await client.head_object(Bucket=self.bucket_name, Key=key)
+                response = await client.head_object(Bucket=self._select_bucket(bucket_name), Key=key)
                 return response["ResponseMetadata"]["HTTPStatusCode"] == 200
             except Exception as e: # pylint: disable=broad-exception-caught
                 logger.warning("Error checking object exists: %s, key: %s", str(e), key)
                 return False
 
-    async def get_object_size(self, key: str) -> int:
+    async def get_object_size(self, key: str, bucket_name: str = "") -> int:
         """Get the size of an object in R2."""
         try:
             async with self.client as client:
-                response = await client.head_object(Bucket=self.bucket_name, Key=key)
+                response = await client.head_object(Bucket=self._select_bucket(bucket_name), Key=key)
                 return response["ContentLength"]
         except Exception as e: # pylint: disable=broad-exception-caught
             logger.warning("Error getting object size: %s, key: %s", str(e), key)
             return 0
         
-    async def get_object_with_width_height(self, key: str) -> Tuple[float, float]:
+    async def get_object_with_width_height(self, key: str, bucket_name: str = "") -> Tuple[float, float]:
         """Get the object with width and height."""
         try:
             async with self.client as client:
-                response = await client.head_object(Bucket=self.bucket_name, Key=key)
+                response = await client.head_object(Bucket=self._select_bucket(bucket_name), Key=key)
                 image_width = float(response.get("Metadata", {}).get("image_width", 0.0))
                 image_height = float(response.get("Metadata", {}).get("image_height", 0.0))
                 return image_width, image_height
@@ -133,7 +138,7 @@ class R2Client:
             async with self.client as client:
                 return await client.generate_presigned_url(
                     ClientMethod="put_object",
-                    Params={"Bucket": bucket_name or self.bucket_name, "Key": key},
+                    Params={"Bucket": self._select_bucket(bucket_name), "Key": key},
                     HttpMethod="PUT",
                     ExpiresIn=expiration
                 )
