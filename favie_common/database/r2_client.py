@@ -5,8 +5,10 @@ from aioboto3 import Session
 from botocore.client import Config
 import logging
 from typing import Optional, Dict, Any, Tuple
-from trace.context_trace_func import context_trace_function
-from metrics.prometheus_metrics import PrometheusMetrics
+#from trace.context_trace_func import context_trace_function
+# from metrics.prometheus_metrics import PrometheusMetrics
+from favie_common.metrics.prometheus_metrics import PrometheusMetrics
+from favie_common.trace.context_trace_func import context_trace_function
 
 logger = logging.getLogger(__name__)
 
