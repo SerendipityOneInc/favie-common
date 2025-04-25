@@ -65,7 +65,7 @@ class R2Client:
         async with self.client as client:
             await client.download_file(Bucket=self._select_bucket(bucket_name), Key=key, Filename=filename)
 
-    async def upload_object(self, fileobj, key: str, bucket_name: str = "", metadata: Optional[Dict[Any, Any]] = None):
+    async def upload_object(self, fileobj, key: str, bucket_name: str = "", metadata: Optional[Dict[Any, Any]] = None) -> bool:
         """Upload file to R2.
         
         Args:
@@ -75,13 +75,20 @@ class R2Client:
             extra_args: Optional extra arguments for upload
             metadata: Optional metadata dictionary to attach to the object
         """
+        ret = False
         async with self.client as client:
-            return await client.put_object(
-                Bucket=self._select_bucket(bucket_name), 
-                Key=key,
-                Body=fileobj,
-                Metadata=metadata or {}
-            )
+            try:
+                response = await client.put_object(
+                    Bucket=self._select_bucket(bucket_name), 
+                    Key=key,
+                    Body=fileobj,
+                    Metadata=metadata or {}
+                )
+                if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
+                    ret = True
+            except Exception as e: # pylint: disable=broad-exception-caught
+                logger.error("Error uploading object: %s, key: %s", str(e), key)
+        return ret
 
     async def download_object(self, key: str, bucket_name: str = "") -> Optional[bytes]:
         """Download file from R2.
@@ -145,3 +152,31 @@ class R2Client:
         except Exception as e: # pylint: disable=broad-exception-caught
             logger.warning("Error generating presigned URL: %s, key: %s", str(e), key)
             return ""
+    async def update_metadata(self, key: str, metadata: Dict[Any, Any], bucket_name: str = "") -> bool:
+        """Update metadata for an object in R2 without modifying the object content.
+        
+        Args:
+            key: The key of the object
+            metadata: New metadata to set
+            bucket_name: Optional bucket name
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        ret = False
+        bucket = self._select_bucket(bucket_name)
+        async with self.client as client:
+            try:
+                # Copy object to itself with new metadata
+                response = await client.copy_object(
+                    CopySource={'Bucket': bucket, 'Key': key},
+                    Bucket=bucket,
+                    Key=key,
+                    Metadata=metadata,
+                    MetadataDirective='REPLACE'  # This tells S3 to replace the metadata
+                )
+                if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
+                    ret = True
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                logger.error("Error updating metadata: %s, key: %s", str(e), key)
+        return ret
