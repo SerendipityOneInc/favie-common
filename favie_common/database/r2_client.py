@@ -71,7 +71,7 @@ class R2Client:
             metadata: Optional metadata dictionary to attach to the object
         """
         async with self.client as client:
-            await client.put_object(
+            return await client.put_object(
                 Bucket=bucket_name or self.bucket_name, 
                 Key=key,
                 Body=fileobj,
