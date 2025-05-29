@@ -1,0 +1,53 @@
+name: Claude Auto Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  auto-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: us-east-1
+
+      - name: Automatic PR Review
+        uses: anthropics/claude-code-action@beta
+        with:
+          trigger_phrase: "@claude"
+          timeout_minutes: "60"
+          github_token: ${{ steps.app-token.outputs.token }}
+          use_bedrock: "true"
+          model: "us.anthropic.claude-sonnet-4-20250514-v1:0"
+          direct_prompt: |
+            Please review this pull request and provide comprehensive feedback.
+
+            Focus on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Performance considerations
+            - Security implications
+            - Test coverage
+            - Documentation updates if needed
+
+            Provide constructive feedback with specific suggestions for improvement.
+            Use inline comments to highlight specific areas of concern.
+          # allowed_tools: "mcp__github__add_pull_request_review_comment"
