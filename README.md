@@ -35,6 +35,12 @@ pip install favie-common
 
 - **R2** – legacy simplified wrapper providing `upload_file`, `upload_fileobj` and `download_file`.
 
+### MQ (`favie_common.mq`)
+- **KafkaClient** – simple async wrapper for `aiokafka`.
+  - `start()`/`stop()` manage producer and consumer lifecycle.
+  - `send(topic, value)` publishes a message.
+  - `consume(topics)` yields messages from subscribed topics.
+
 ### Metrics (`favie_common.metrics`)
 - **PrometheusMetrics** – integrates `prometheus_fastapi_instrumentator`.
   - `init_metrics(app)` instruments a FastAPI app and exposes metrics on `/admin/metrics`.
